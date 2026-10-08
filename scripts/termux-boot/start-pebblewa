@@ -1,0 +1,5 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Termux:Boot script: keeps pebblewa running after the phone restarts.
+termux-wake-lock
+mkdir -p ~/.local/share/pebblewa
+exec pebblewa >> ~/.local/share/pebblewa/pebblewa.log 2>&1

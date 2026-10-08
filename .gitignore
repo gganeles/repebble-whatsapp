@@ -1,0 +1,9 @@
+# Go
+/server/pebblewa
+/server/pebblewa-demo
+/dist/
+
+# Pebble
+/watchapp/build/
+/watchapp/node_modules/
+/watchapp/package-lock.json

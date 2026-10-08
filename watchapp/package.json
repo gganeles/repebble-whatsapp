@@ -1,0 +1,55 @@
+{
+  "name": "repebble-whatsapp",
+  "author": "Repebble WhatsApp",
+  "version": "0.2.0",
+  "keywords": [
+    "pebble-app",
+    "whatsapp",
+    "messaging"
+  ],
+  "private": true,
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
+  "pebble": {
+    "displayName": "WhatsApp",
+    "uuid": "d5225860-888f-4d85-9107-d00bb25002cf",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery",
+      "basalt",
+      "diorite"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "capabilities": [
+      "configurable"
+    ],
+    "messageKeys": [
+      "CMD",
+      "REQ",
+      "STATE",
+      "CHAT",
+      "MSG",
+      "INDEX",
+      "NAME",
+      "TEXT",
+      "TS",
+      "UNREAD",
+      "FLAGS",
+      "ERR",
+      "WIDTH",
+      "HEIGHT",
+      "FORMAT",
+      "STRIDE",
+      "OFFSET",
+      "TOTAL",
+      "DATA"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
