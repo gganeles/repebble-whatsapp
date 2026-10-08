@@ -15,6 +15,7 @@ module.exports = [
       {
         type: 'input',
         id: 'serverUrl',
+        messageKey: 'serverUrl',
         label: 'Server URL',
         defaultValue: 'http://127.0.0.1:8723',
         attributes: { type: 'url' }
@@ -22,6 +23,7 @@ module.exports = [
       {
         type: 'input',
         id: 'token',
+        messageKey: 'token',
         label: 'Token',
         defaultValue: '',
         attributes: { autocapitalize: 'off', autocorrect: 'off' }
@@ -35,6 +37,7 @@ module.exports = [
       {
         type: 'input',
         id: 'phone',
+        messageKey: 'phone',
         label: 'Your WhatsApp number',
         description: 'International format, e.g. +491512345678. Used to get a pairing code shown on the watch.',
         defaultValue: '',
@@ -54,6 +57,7 @@ module.exports = [
       return {
         type: 'input',
         id: 'reply' + n,
+        messageKey: 'reply' + n,
         label: 'Reply ' + n,
         defaultValue: '',
         attributes: { maxlength: 39 }

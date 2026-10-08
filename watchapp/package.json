@@ -46,7 +46,18 @@
       "STRIDE",
       "OFFSET",
       "TOTAL",
-      "DATA"
+      "DATA",
+      "serverUrl",
+      "token",
+      "phone",
+      "reply1",
+      "reply2",
+      "reply3",
+      "reply4",
+      "reply5",
+      "reply6",
+      "reply7",
+      "reply8"
     ],
     "resources": {
       "media": []

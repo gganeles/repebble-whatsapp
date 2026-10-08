@@ -402,7 +402,21 @@ Pebble.addEventListener('webviewclosed', function(e) {
   if (!e || !e.response) {
     return;
   }
-  var raw = clay.getSettings(e.response, false);
+  // Clay keys settings by messageKey. Fall back to decoding the response ourselves.
+  var raw = {};
+  try {
+    raw = clay.getSettings(e.response, false) || {};
+  } catch (err) {
+    console.log('Clay getSettings failed: ' + err);
+  }
+  if (!Object.keys(raw).length) {
+    try {
+      raw = JSON.parse(decodeURIComponent(e.response)) || {};
+    } catch (err) {
+      console.log('Could not parse settings: ' + err);
+      return;
+    }
+  }
   var values = {};
   Object.keys(raw).forEach(function(k) {
     var v = raw[k];
@@ -415,12 +429,16 @@ Pebble.addEventListener('webviewclosed', function(e) {
       replies.push(r);
     }
   }
-  settings.save({
-    serverUrl: String(values.serverUrl || '').trim(),
-    token: String(values.token || '').trim(),
-    phone: String(values.phone || '').trim(),
-    replies: replies
+  // Only overwrite fields that came back filled in.
+  var update = { replies: replies };
+  ['serverUrl', 'token', 'phone'].forEach(function(k) {
+    var v = String(values[k] || '').trim();
+    if (v) {
+      update[k] = v;
+    }
   });
+  console.log('Saved settings: ' + Object.keys(update).join(', '));
+  settings.save(update);
   if (replies.length) {
     api.setReplies(replies, function(err) {
       if (err) {
