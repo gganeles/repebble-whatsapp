@@ -101,6 +101,8 @@ function sendStatus(err, statusObj) {
 }
 
 function getStatus() {
+  var s = settings.load();
+  console.log('Checking status at ' + s.serverUrl + ' with token of length ' + s.token.length);
   if (!settings.load().token) {
     console.log('No token saved; settings: ' + JSON.stringify(settings.load()));
     send({ CMD: P.STATUS, STATE: P.STATE_NOT_CONFIGURED, ERR: P.ERR_BAD_TOKEN, TEXT: 'No token saved. Open app settings on your phone.' });

@@ -11,7 +11,9 @@ function ApiError(status, code, message) {
 function request(method, path, body, callback) {
   var s = settings.load();
   var xhr = new XMLHttpRequest();
-  xhr.open(method, s.serverUrl + '/v1' + path, true);
+  // Some PebbleKit JS runtimes drop custom headers, so also send the token as a query param.
+  var url = s.serverUrl + '/v1' + path + (path.indexOf('?') < 0 ? '?' : '&') + 'token=' + encodeURIComponent(s.token);
+  xhr.open(method, url, true);
   xhr.setRequestHeader('Authorization', 'Bearer ' + s.token);
   if (body !== undefined) {
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -38,10 +40,12 @@ function request(method, path, body, callback) {
       finish(null, data);
     } else {
       var e = (data && data.error) || {};
+      console.log(method + ' ' + path + ' failed: HTTP ' + xhr.status + ' ' + (e.code || '') + ' ' + (e.message || ''));
       finish(new ApiError(xhr.status, e.code || 'http_' + xhr.status, e.message || 'HTTP ' + xhr.status));
     }
   };
   xhr.onerror = function() {
+    console.log(method + ' ' + path + ' failed: network error to ' + s.serverUrl);
     finish(new ApiError(0, 'unreachable', 'Server not reachable'));
   };
   xhr.ontimeout = function() {
