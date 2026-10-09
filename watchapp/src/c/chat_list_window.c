@@ -3,6 +3,7 @@
 #include "comms.h"
 #include "model.h"
 #include "theme.h"
+#include "touch.h"
 #include "ui.h"
 
 #define ROW_HEIGHT 50
@@ -114,6 +115,16 @@ static void select_long_click(MenuLayer *menu, MenuIndex *index, void *ctx) {
   menu_layer_reload_data(s_menu);
 }
 
+static void tap(GPoint point) {
+  int row = touch_menu_row_at(s_menu, point, get_num_rows, get_cell_height);
+  if (row < 0) {
+    return;
+  }
+  MenuIndex index = MenuIndex(0, row);
+  menu_layer_set_selected_index(s_menu, index, MenuRowAlignNone, false);
+  select_click(s_menu, &index, NULL);
+}
+
 static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect b = layer_get_bounds(root);
@@ -139,11 +150,13 @@ static void window_load(Window *window) {
   menu_layer_set_highlight_colors(s_menu, THEME_ACCENT, THEME_ON_ACCENT);
   menu_layer_set_click_config_onto_window(s_menu, window);
   layer_add_child(root, menu_layer_get_layer(s_menu));
+  touch_attach_menu(window, s_menu, get_num_rows, get_cell_height, tap);
 
   comms_get_chats(0);
 }
 
 static void window_unload(Window *window) {
+  touch_detach(window);
   menu_layer_destroy(s_menu);
   text_layer_destroy(s_header);
   window_destroy(s_window);

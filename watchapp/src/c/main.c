@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "comms.h"
 #include "model.h"
+#include "touch.h"
 #include "ui.h"
 
 void format_time(int32_t ts, char *buf, size_t size) {
@@ -26,11 +27,13 @@ void format_time(int32_t ts, char *buf, size_t size) {
 static void init(void) {
   memset(&g_model, 0, sizeof(g_model));
   comms_init();
+  touch_init();
   status_window_push();
   comms_get_status();
 }
 
 static void deinit(void) {
+  touch_deinit();
   comms_deinit();
 }
 

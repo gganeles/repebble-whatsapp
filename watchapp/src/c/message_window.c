@@ -4,6 +4,7 @@
 #include "comms.h"
 #include "model.h"
 #include "theme.h"
+#include "touch.h"
 #include "ui.h"
 
 #define PAD 4
@@ -115,6 +116,10 @@ static void select_click(ClickRecognizerRef recognizer, void *context) {
   reply_menu_open(s_chat);
 }
 
+static void tap(GPoint point) {
+  reply_menu_open(s_chat);
+}
+
 static void click_config(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click);
 }
@@ -141,6 +146,7 @@ static void window_load(Window *window) {
   scroll_layer_set_click_config_onto_window(s_scroll, window);
   scroll_layer_set_callbacks(s_scroll, (ScrollLayerCallbacks) { .click_config_provider = click_config });
   layer_add_child(root, scroll_layer_get_layer(s_scroll));
+  touch_attach(window, s_scroll, tap);
 
   s_image_layer = bitmap_layer_create(GRect(0, 0, b.size.w, 1));
   bitmap_layer_set_alignment(s_image_layer, GAlignCenter);
@@ -176,6 +182,7 @@ static void window_load(Window *window) {
 }
 
 static void window_unload(Window *window) {
+  touch_detach(window);
   text_layer_destroy(s_header);
   text_layer_destroy(s_image_note);
   bitmap_layer_destroy(s_image_layer);

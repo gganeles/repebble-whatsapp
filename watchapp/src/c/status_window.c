@@ -2,6 +2,7 @@
 #include <pebble.h>
 #include "comms.h"
 #include "theme.h"
+#include "touch.h"
 #include "ui.h"
 
 static Window *s_window;
@@ -83,6 +84,10 @@ static void select_click(ClickRecognizerRef recognizer, void *context) {
   }
 }
 
+static void tap(GPoint point) {
+  select_click(NULL, NULL);
+}
+
 static void click_config(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click);
 }
@@ -108,10 +113,12 @@ static void window_load(Window *window) {
     text_layer_set_text_alignment(layers[i], PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft));
     layer_add_child(root, text_layer_get_layer(layers[i]));
   }
+  touch_attach(window, NULL, tap);
   render("");
 }
 
 static void window_unload(Window *window) {
+  touch_detach(window);
   text_layer_destroy(s_title);
   text_layer_destroy(s_body);
   text_layer_destroy(s_hint);
