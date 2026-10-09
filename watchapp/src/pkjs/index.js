@@ -102,7 +102,8 @@ function sendStatus(err, statusObj) {
 
 function getStatus() {
   if (!settings.load().token) {
-    send({ CMD: P.STATUS, STATE: P.STATE_NOT_CONFIGURED, ERR: P.ERR_BAD_TOKEN, TEXT: 'Open app settings on your phone' });
+    console.log('No token saved; settings: ' + JSON.stringify(settings.load()));
+    send({ CMD: P.STATUS, STATE: P.STATE_NOT_CONFIGURED, ERR: P.ERR_BAD_TOKEN, TEXT: 'No token saved. Open app settings on your phone.' });
     return;
   }
   api.status(sendStatus);
@@ -395,10 +396,12 @@ Pebble.addEventListener('appmessage', function(e) {
 });
 
 Pebble.addEventListener('showConfiguration', function() {
+  console.log('Opening settings page');
   Pebble.openURL(clay.generateUrl());
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
+  console.log('Settings page closed, response length ' + (e && e.response ? e.response.length : 0));
   if (!e || !e.response) {
     return;
   }

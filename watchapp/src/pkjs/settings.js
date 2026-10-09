@@ -15,9 +15,20 @@ function load() {
   } catch (e) {
     saved = {};
   }
+  // Clay also keeps its own copy of the last saved page; use it for anything we missed.
+  var clay = {};
+  try {
+    clay = JSON.parse(localStorage.getItem('clay-settings') || '{}') || {};
+  } catch (e) {
+    clay = {};
+  }
   var out = {};
   Object.keys(DEFAULTS).forEach(function(k) {
-    out[k] = saved[k] !== undefined && saved[k] !== '' ? saved[k] : DEFAULTS[k];
+    var v = saved[k];
+    if (v === undefined || v === '' || (Array.isArray(v) && !v.length)) {
+      v = typeof clay[k] === 'string' ? clay[k].trim() : clay[k];
+    }
+    out[k] = v !== undefined && v !== '' && v !== null ? v : DEFAULTS[k];
   });
   out.serverUrl = String(out.serverUrl).replace(/\/+$/, '');
   return out;
