@@ -1,49 +1,38 @@
 #include "touch.h"
 
-#if defined(_PBL_API_EXISTS_tap_recognizer_create) && defined(_PBL_API_EXISTS_window_set_touch_bridge_disabled)
+#if defined(_PBL_API_EXISTS_touch_service_subscribe)
 
 #define MAX_BINDINGS 4
+// Movement beyond this many pixels turns a touch into a drag instead of a tap.
+#define DRAG_THRESHOLD 8
 
-// One per window with touch: recognizer callbacks don't carry user data, so look them up here.
+// One per window with touch. Events go to the binding of the top window.
 typedef struct {
   Window *window;
-  Recognizer *tap;
-  Recognizer *pan;
   ScrollLayer *scroll;
   MenuLayer *menu;
   TouchRowCount rows;
   TouchRowHeight height;
   TouchTapHandler on_tap;
-  int16_t base;  // content offset when the drag started
 } Binding;
 
 static Binding s_bindings[MAX_BINDINGS];
 
-static Binding *find(const Recognizer *r) {
+// The gesture in progress.
+static Binding *s_active;
+static GPoint s_start;
+static GPoint s_last;
+static int16_t s_base;  // content offset at touchdown
+static bool s_dragging;
+
+static Binding *top_binding(void) {
+  Window *top = window_stack_get_top_window();
   for (int i = 0; i < MAX_BINDINGS; i++) {
-    if (s_bindings[i].window && (s_bindings[i].tap == r || s_bindings[i].pan == r)) {
+    if (top && s_bindings[i].window == top) {
       return &s_bindings[i];
     }
   }
   return NULL;
-}
-
-static void noop_handler(const TouchEvent *event, void *context) {
-}
-
-void touch_init(void) {
-  touch_service_subscribe(noop_handler, NULL);
-}
-
-void touch_deinit(void) {
-  touch_service_unsubscribe();
-}
-
-static void tap_cb(const Recognizer *recognizer, RecognizerEvent event) {
-  Binding *b = find(recognizer);
-  if (b && b->on_tap && event == RecognizerEvent_Completed) {
-    b->on_tap(tap_recognizer_get_tap_point(recognizer));
-  }
 }
 
 static void set_offset(ScrollLayer *scroll, int16_t y) {
@@ -66,51 +55,63 @@ static void select_visible_row(Binding *b) {
   }
 }
 
-static void pan_cb(const Recognizer *recognizer, RecognizerEvent event) {
-  Binding *b = find(recognizer);
-  if (!b || !b->scroll) {
-    return;
-  }
-  switch (event) {
-    case RecognizerEvent_Started:
-      b->base = scroll_layer_get_content_offset(b->scroll).y;
-      break;
-    case RecognizerEvent_Updated:
-      set_offset(b->scroll, b->base + pan_recognizer_get_delta_since_start(recognizer).y);
-      break;
-    case RecognizerEvent_Completed:
-      if (b->menu) {
-        select_visible_row(b);
+static void touch_handler(const TouchEvent *event, void *context) {
+  GPoint p = GPoint(event->x, event->y);
+  switch (event->type) {
+    case TouchEvent_Touchdown:
+      s_active = top_binding();
+      s_start = s_last = p;
+      s_dragging = false;
+      if (s_active && s_active->scroll) {
+        s_base = scroll_layer_get_content_offset(s_active->scroll).y;
       }
       break;
-    case RecognizerEvent_Cancelled:
-      set_offset(b->scroll, b->base);
+    case TouchEvent_PositionUpdate:
+      if (!s_active || s_active != top_binding()) {
+        s_active = NULL;
+        break;
+      }
+      s_last = p;
+      if (!s_dragging && abs(p.y - s_start.y) > DRAG_THRESHOLD) {
+        s_dragging = true;
+      }
+      if (s_dragging && s_active->scroll) {
+        set_offset(s_active->scroll, s_base + (p.y - s_start.y));
+      }
+      break;
+    case TouchEvent_Liftoff:
+      if (!s_active || s_active != top_binding()) {
+        s_active = NULL;
+        break;
+      }
+      if (s_dragging) {
+        if (s_active->menu) {
+          select_visible_row(s_active);
+        }
+      } else if (abs(s_last.x - s_start.x) <= DRAG_THRESHOLD && s_active->on_tap) {
+        s_active->on_tap(s_start);
+      }
+      s_active = NULL;
       break;
   }
 }
 
+void touch_init(void) {
+  touch_service_subscribe(touch_handler, NULL);
+}
+
+void touch_deinit(void) {
+  touch_service_unsubscribe();
+}
+
 static Binding *attach(Window *window, ScrollLayer *scroll, MenuLayer *menu, TouchTapHandler on_tap) {
-  Binding *b = NULL;
-  for (int i = 0; i < MAX_BINDINGS && !b; i++) {
+  for (int i = 0; i < MAX_BINDINGS; i++) {
     if (!s_bindings[i].window) {
-      b = &s_bindings[i];
+      s_bindings[i] = (Binding) { .window = window, .scroll = scroll, .menu = menu, .on_tap = on_tap };
+      return &s_bindings[i];
     }
   }
-  if (!b) {
-    return NULL;
-  }
-  *b = (Binding) { .window = window, .scroll = scroll, .menu = menu, .on_tap = on_tap };
-  // Take touch input ourselves instead of the system's button emulation.
-  window_set_touch_bridge_disabled(window, true);
-  if (on_tap) {
-    b->tap = tap_recognizer_create(tap_cb, NULL);
-    window_attach_recognizer(window, b->tap);
-  }
-  if (scroll) {
-    b->pan = pan_recognizer_create(pan_cb, NULL, PanAxis_Vertical);
-    window_attach_recognizer(window, b->pan);
-  }
-  return b;
+  return NULL;
 }
 
 void touch_attach(Window *window, ScrollLayer *scroll, TouchTapHandler on_tap) {
@@ -129,7 +130,9 @@ void touch_attach_menu(Window *window, MenuLayer *menu, TouchRowCount rows, Touc
 void touch_detach(Window *window) {
   for (int i = 0; i < MAX_BINDINGS; i++) {
     if (s_bindings[i].window == window) {
-      // The window owns its recognizers and destroys them itself.
+      if (s_active == &s_bindings[i]) {
+        s_active = NULL;
+      }
       s_bindings[i] = (Binding) { 0 };
     }
   }
